@@ -1,0 +1,19 @@
+{
+  "ply": "C:\\Projects\\NPBG_Baseline\\results\\3dgs\\truck\\model\\point_cloud\\iteration_30000\\point_cloud.ply",
+  "source": "C:\\Projects\\NPBG_Baseline\\data\\tandt_db\\tandt\\truck",
+  "n_test_views": 32,
+  "resolution_wh": [
+    979,
+    546
+  ],
+  "n_gaussians": 2054918,
+  "sh_degree": 3,
+  "psnr": 25.459362149238586,
+  "ssim": 0.88475251942873,
+  "lpips": 0.14183326275087893,
+  "load_s": 1.2247169000002032,
+  "render_test_set_s": 0.3154898999996476,
+  "render_fps": 137.12888958591807,
+  "render_ms_per_frame": 7.292409375002269,
+  "render_peak_alloc_mib": 1322.380859375
+}

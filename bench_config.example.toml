@@ -1,0 +1,11 @@
+# Copy to bench_config.toml and point each entry at the python.exe of that method's env.
+# The harness itself runs in any Python >= 3.11 and launches each method in its own env.
+
+[python]
+gs    = "C:/Users/cole9/miniforge3/envs/gs/python.exe"     # 3DGS + shared evaluator
+sog   = "C:/Users/cole9/miniforge3/envs/sogs/python.exe"   # Self-Organizing Gaussians
+sharp = "C:/Users/cole9/miniforge3/envs/sharp/python.exe"  # Apple SHARP
+
+[gpu]
+index = 0
+sample_interval_ms = 200

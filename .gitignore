@@ -1,0 +1,20 @@
+# Third-party method repos (cloned by scripts/clone_methods.ps1 at pinned commits)
+external/
+
+# Datasets and benchmark outputs (large)
+data/
+# Results: keep the tables and each run's small json records, not the models (100s of MB)
+results/**
+!results/**/
+!results/summary.csv
+!results/summary.md
+!results/*/*/summary.json
+!results/*/*/eval.json
+
+# Local machine config (python paths of each env)
+bench_config.toml
+
+__pycache__/
+*.pyc
+wandb_out/
+.vscode/
