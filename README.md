@@ -106,6 +106,19 @@ It loads the 14.38 compiler, creates the `gs` / `sogs` (/ `sharp`) envs, writes
 Re-running skips envs that already exist. The individual commands are in
 [scripts/setup_envs.bat](scripts/setup_envs.bat) if one step needs debugging.
 
+### Linux (lab machine)
+
+```bash
+bash scripts/clone_methods.sh       # same pinned commits as clone_methods.ps1
+bash scripts/setup_envs.sh          # 3DGS + SOG  (add "sharp" to also build SHARP)
+```
+
+CUDA 11.8 (which the `gs` and `sogs` envs are built against) only accepts gcc 11 or older.
+The script uses `/usr/local/cuda-11.8` if it exists and the system gcc is 11 or older.
+Otherwise it installs CUDA 11.8 + gcc 11 into a separate `cuda118` conda env and builds
+with those. It reads the GPU architecture from `nvidia-smi`, and writes the `quasar-npbg`
+env's python into `bench_config.toml` as `npbg` when it finds that env.
+
 ## Running
 
 ```powershell
