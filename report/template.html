@@ -108,6 +108,12 @@ td:first-child span { display: inline-flex; gap: 8px; align-items: center; }
 .notes p { font-size: 14px; color: var(--ink-2); }
 .notes p b { color: var(--ink); font-weight: 600; }
 .foot { font-size: 12.5px; color: var(--muted); max-width: 90ch; }
+/* livestream stages: prose cells, so wrap and read left to right instead of the scoreboard's numeric columns */
+table.stages { min-width: 820px; }
+table.stages th, table.stages td { text-align: left; white-space: normal; vertical-align: top; }
+table.stages td { font-family: var(--body); font-size: 13.5px; line-height: 1.45; }
+table.stages td:first-child { width: 15%; }
+table.stages th:not(:first-child), table.stages td:not(:first-child) { width: 28%; }
 section { display: grid; gap: 14px; }
 @media (prefers-reduced-motion: no-preference) { .stage .top { transition: none; } }
 </style>
@@ -167,6 +173,25 @@ section { display: grid; gap: 14px; }
   <section aria-label="Reading the numbers">
     <h2>Reading the numbers</h2>
     <div class="notes" id="notes"></div>
+  </section>
+
+  <section aria-label="Livestream readiness">
+    <h2>What a 4-camera livestream needs</h2>
+    <p class="lede">3DGS and SOG train every scene from scratch, so a live version needs a network trained once that builds each frame's scene in one pass. That is NPBG's e2e model today, or a feed-forward Gaussian model. Each stage below has to keep up every frame.</p>
+    <div class="tablewrap">
+      <table class="stages">
+        <thead><tr><th>Stage</th><th>What it has to do live</th><th>NPBG today</th><th>A feed-forward Gaussian route</th></tr></thead>
+        <tbody>
+          <tr><td>Capture</td><td>Grab 4 synchronized frames</td><td>Done; frames land within about 20 ms of each other</td><td>Same rig, same code</td></tr>
+          <tr><td>Camera poses</td><td>Known for every frame</td><td>Free: the rig is calibrated and doesn't move</td><td>Same</td></tr>
+          <tr><td>Depth / geometry</td><td>Per frame, fast</td><td>FoundationStereo, about 80 ms of GPU time; the current bottleneck</td><td>Many of these models predict their own depth, so FoundationStereo might be dropped or used as a hint</td></tr>
+          <tr><td>Scene build</td><td>One network pass</td><td>About 19 ms (e2e model)</td><td>One network pass; speed depends on the model</td></tr>
+          <tr><td>Compression and streaming</td><td>Send each frame's scene over the network</td><td>Compact format designed (8-bit descriptors, 16-bit depth), about 1–2 Gbps at 15 fps by a rough estimate</td><td>Gaussians are larger per point. SOG's compression sorts and encodes each scene and was built for offline use, so it would need a real-time replacement.</td></tr>
+          <tr><td>Rendering on the viewer</td><td>30–90 fps on the viewer's device</td><td>20–35 fps at 1080p on a 4090, because of the decoder</td><td>Plain rasterization, hundreds of fps, even on weaker GPUs</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="foot">NPBG's live numbers (capture skew, FoundationStereo cost, 19 ms scene build) come from NPBG's REALTIME_PIPELINE.md on two RTX 4090s, not from this benchmark. The bandwidth figure is an estimate, not a measurement. The feed-forward Gaussian column has not been tested here yet.</p>
   </section>
 </div>
 <div class="tip" id="tip" hidden></div>
