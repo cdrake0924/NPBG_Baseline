@@ -1,0 +1,30 @@
+{
+  "scene": "/home/points/NPBG_Baseline/data/npbg/rig_e2e_p10",
+  "n_points": 456569,
+  "frame_wh": [
+    1920,
+    1080
+  ],
+  "padded_wh": [
+    1920,
+    1088
+  ],
+  "levels": 5,
+  "decoder_params": 7709827,
+  "raster_ms": 8.720153866549177,
+  "decoder_fp32_ms": 39.608583967007384,
+  "total_fp32_ms": 48.981629433304384,
+  "decoder_bf16_ms": 33.6753083000076,
+  "total_bf16_ms": 42.86278179982522,
+  "decoder_gflops_per_frame": 1098.9600768,
+  "decoder_cl_fp32_ms": 53.76213863346493,
+  "decoder_cl_bf16_ms": 32.22744693339337,
+  "total_cl_bf16_ms": 41.98997469987565,
+  "compile_warmup_s": 3.506225541990716,
+  "decoder_compiled_cl_bf16_ms": 18.81829909980297,
+  "total_compiled_cl_bf16_ms": 28.55596760006544,
+  "fps_fp32": 20.415817349678935,
+  "fps_cl_bf16": 23.81520844314682,
+  "fps_compiled_cl_bf16": 35.018949944378996,
+  "fps_bf16": 23.330263646212472
+}

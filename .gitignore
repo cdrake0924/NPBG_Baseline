@@ -21,3 +21,8 @@ wandb_out/
 
 # Pasted chat context (contains credentials) - never commit
 slack-thread.md
+
+# Local harness venv and logs
+.venv/
+logs/
+!results/profile/*.json

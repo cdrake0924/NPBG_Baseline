@@ -1,0 +1,158 @@
+{
+  "ply": "/home/points/NPBG_Baseline/results/sharp/robot_lab_p05/model/merged.ply",
+  "source": "/data/points/npbg_baseline/data/npbg/robot_lab_p05",
+  "n_test_views": 12,
+  "resolution_wh": [
+    960,
+    540
+  ],
+  "n_gaussians": 4718592,
+  "sh_degree": 0,
+  "npbg_psnr_full": 14.83271545175645,
+  "npbg_psnr_covered": 14.83872253260993,
+  "npbg_ssim_full": 0.3558674802382787,
+  "npbg_ssim_covered": 0.35714157560034643,
+  "npbg_lpips_full": 0.5743086487054825,
+  "psnr": 14.832650979359945,
+  "ssim": 0.3615779106815656,
+  "lpips": 0.6036422699689865,
+  "per_view": [
+    {
+      "image": "frame000005",
+      "npbg_psnr_full": 18.77988484820006,
+      "npbg_psnr_covered": 18.833504019090594,
+      "npbg_ssim_full": 0.5356008410453796,
+      "npbg_ssim_covered": 0.5383179256932831,
+      "npbg_lpips_full": 0.33066457509994507,
+      "psnr": 18.779420852661133,
+      "ssim": 0.5414950847625732,
+      "lpips": 0.4243737459182739
+    },
+    {
+      "image": "frame000015",
+      "npbg_psnr_full": 15.111374057592515,
+      "npbg_psnr_covered": 15.10089086861872,
+      "npbg_ssim_full": 0.37965986132621765,
+      "npbg_ssim_covered": 0.3808030612106063,
+      "npbg_lpips_full": 0.5489691495895386,
+      "psnr": 15.111164093017578,
+      "ssim": 0.3857106864452362,
+      "lpips": 0.6010867357254028
+    },
+    {
+      "image": "frame000025",
+      "npbg_psnr_full": 13.594306598605623,
+      "npbg_psnr_covered": 13.603051756535908,
+      "npbg_ssim_full": 0.28865382075309753,
+      "npbg_ssim_covered": 0.2906208011809834,
+      "npbg_lpips_full": 0.629133939743042,
+      "psnr": 13.59429931640625,
+      "ssim": 0.29459264874458313,
+      "lpips": 0.6386104226112366
+    },
+    {
+      "image": "frame000035",
+      "npbg_psnr_full": 13.50193976971954,
+      "npbg_psnr_covered": 13.503807581654982,
+      "npbg_ssim_full": 0.2896125316619873,
+      "npbg_ssim_covered": 0.2928972449785323,
+      "npbg_lpips_full": 0.6696344017982483,
+      "psnr": 13.502053260803223,
+      "ssim": 0.2956695258617401,
+      "lpips": 0.656238853931427
+    },
+    {
+      "image": "frame000045",
+      "npbg_psnr_full": 13.133688627411432,
+      "npbg_psnr_covered": 13.133645039500792,
+      "npbg_ssim_full": 0.32515546679496765,
+      "npbg_ssim_covered": 0.3251638502271478,
+      "npbg_lpips_full": 0.7346476316452026,
+      "psnr": 13.133612632751465,
+      "ssim": 0.3296409845352173,
+      "lpips": 0.7172131538391113
+    },
+    {
+      "image": "frame000055",
+      "npbg_psnr_full": 13.357511166620942,
+      "npbg_psnr_covered": 13.356835083620641,
+      "npbg_ssim_full": 0.3227750062942505,
+      "npbg_ssim_covered": 0.3231212249335588,
+      "npbg_lpips_full": 0.6318191885948181,
+      "psnr": 13.357132911682129,
+      "ssim": 0.32661497592926025,
+      "lpips": 0.6107020378112793
+    },
+    {
+      "image": "frame000065",
+      "npbg_psnr_full": 14.110902937897155,
+      "npbg_psnr_covered": 14.08479525071489,
+      "npbg_ssim_full": 0.2699694335460663,
+      "npbg_ssim_covered": 0.27282762355425727,
+      "npbg_lpips_full": 0.5705273151397705,
+      "psnr": 14.110889434814453,
+      "ssim": 0.27470698952674866,
+      "lpips": 0.6222423911094666
+    },
+    {
+      "image": "frame000075",
+      "npbg_psnr_full": 16.010066688858018,
+      "npbg_psnr_covered": 16.01020154552807,
+      "npbg_ssim_full": 0.40976718068122864,
+      "npbg_ssim_covered": 0.4098508366921286,
+      "npbg_lpips_full": 0.510962188243866,
+      "psnr": 16.010225296020508,
+      "ssim": 0.4165610671043396,
+      "lpips": 0.5640811324119568
+    },
+    {
+      "image": "frame000085",
+      "npbg_psnr_full": 14.48276787130818,
+      "npbg_psnr_covered": 14.480026934336346,
+      "npbg_ssim_full": 0.33849260210990906,
+      "npbg_ssim_covered": 0.3386405101555798,
+      "npbg_lpips_full": 0.5955886840820312,
+      "psnr": 14.48269271850586,
+      "ssim": 0.3444397747516632,
+      "lpips": 0.639298141002655
+    },
+    {
+      "image": "frame000095",
+      "npbg_psnr_full": 14.172059235418214,
+      "npbg_psnr_covered": 14.16822171259759,
+      "npbg_ssim_full": 0.3483343720436096,
+      "npbg_ssim_covered": 0.34946400884806167,
+      "npbg_lpips_full": 0.6306764483451843,
+      "psnr": 14.172450065612793,
+      "ssim": 0.3537709712982178,
+      "lpips": 0.636621356010437
+    },
+    {
+      "image": "frame000105",
+      "npbg_psnr_full": 15.663909182718958,
+      "npbg_psnr_covered": 15.70026780614274,
+      "npbg_ssim_full": 0.3633821904659271,
+      "npbg_ssim_covered": 0.36363995202157295,
+      "npbg_lpips_full": 0.5020720958709717,
+      "psnr": 15.66374397277832,
+      "ssim": 0.37035301327705383,
+      "lpips": 0.5676810145378113
+    },
+    {
+      "image": "frame000115",
+      "npbg_psnr_full": 16.074174436726803,
+      "npbg_psnr_covered": 16.08942279297793,
+      "npbg_ssim_full": 0.3990064561367035,
+      "npbg_ssim_covered": 0.40035186770844483,
+      "npbg_lpips_full": 0.5370081663131714,
+      "psnr": 16.074127197265625,
+      "ssim": 0.40537920594215393,
+      "lpips": 0.5655582547187805
+    }
+  ],
+  "load_s": 0.4727339929959271,
+  "render_test_set_s": 0.15924171700316947,
+  "render_fps": 106.00508157210729,
+  "render_ms_per_frame": 9.433510027722352,
+  "render_peak_alloc_mib": 1177.810546875
+}

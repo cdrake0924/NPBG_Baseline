@@ -7,6 +7,8 @@
 #
 # Optional overrides:
 #     NPBG_PYTHON=/path/to/python   NPBG's env (default: the quasar-npbg env, if found)
+#     NPBG_ROOT=/path/to/NPBG       NPBG checkout (default: ~/NPBG)
+#     NPBG_NETWORK=/path/to/best.pt NPBG network reported as checkpoint_mb (default: the e2e model)
 #     TORCH_CUDA_ARCH_LIST=8.9      GPU architecture to compile for (default: read from nvidia-smi)
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -54,6 +56,8 @@ else
     py="$ENVS/gs/bin/python"
     "$py" -m pip install torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu118 || fail "installing torch (gs)"
     "$py" -m pip install plyfile tqdm opencv-python joblib ninja "numpy<2" || fail "installing gs packages"
+    # lpips: NPBG's metrics (AlexNet LPIPS) for bench/scoring.py, same version as the quasar-npbg env
+    "$py" -m pip install lpips==0.1.4 || fail "installing lpips (gs)"
     "$py" -m pip install --no-build-isolation \
         external/gaussian-splatting/submodules/diff-gaussian-rasterization \
         external/gaussian-splatting/submodules/simple-knn \
@@ -76,7 +80,8 @@ if [ "${1:-}" = "sharp" ]; then
         conda create -n sharp python=3.13 -y || fail "creating the sharp env"
         py="$ENVS/sharp/bin/python"
         "$py" -m pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu126 || fail "installing torch (sharp)"
-        "$py" -m pip install -r external/ml-sharp/requirements.txt || fail "installing SHARP requirements"
+        # requirements.txt contains "-e .", which pip resolves against the current directory
+        (cd external/ml-sharp && "$py" -m pip install -r requirements.txt) || fail "installing SHARP requirements"
         "$py" -m pip install -e external/ml-sharp || fail "installing SHARP"
     fi
 fi
@@ -95,6 +100,10 @@ sog   = "$ENVS/sogs/bin/python"
 sharp = "$ENVS/sharp/bin/python"
 npbg  = "${NPBG_PYTHON:-NOT FOUND - set NPBG_PYTHON and re-run}"
 
+[npbg]
+root    = "${NPBG_ROOT:-$HOME/NPBG}"                  # NPBG checkout: its metrics.py scores every method
+network = "${NPBG_NETWORK:-/data/points/npbg_runs/e2e_crops64/best.pt}"  # builds scenes; for checkpoint_mb
+
 [gpu]
 index = 0
 sample_interval_ms = 200
@@ -102,7 +111,7 @@ EOF
 echo "Wrote bench_config.toml"
 
 # ---- smoke test: can each env import its CUDA rasterizer? ----------------------------------
-"$ENVS/gs/bin/python" -c "import torch, diff_gaussian_rasterization, simple_knn._C, fused_ssim; print('[gs] OK, torch', torch.__version__, 'cuda', torch.cuda.is_available())" || fail "gs smoke test"
+"$ENVS/gs/bin/python" -c "import torch, diff_gaussian_rasterization, simple_knn._C, fused_ssim, lpips; print('[gs] OK, torch', torch.__version__, 'cuda', torch.cuda.is_available())" || fail "gs smoke test"
 "$ENVS/sogs/bin/python" -c "import torch, diff_gaussian_rasterization, simple_knn._C, plas, imagecodecs; print('[sogs] OK, torch', torch.__version__, 'cuda', torch.cuda.is_available())" || fail "sogs smoke test"
 if [ "${1:-}" = "sharp" ]; then
     "$ENVS/sharp/bin/python" -c "import torch, sharp; print('[sharp] OK, torch', torch.__version__, 'cuda', torch.cuda.is_available())" || fail "sharp smoke test"

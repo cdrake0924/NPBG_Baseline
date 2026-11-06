@@ -1,0 +1,30 @@
+{
+  "scene": "/home/points/NPBG_Baseline/data/npbg/robot_lab_p05",
+  "n_points": 1779053,
+  "frame_wh": [
+    960,
+    540
+  ],
+  "padded_wh": [
+    960,
+    544
+  ],
+  "levels": 5,
+  "decoder_params": 1928771,
+  "raster_ms": 15.160701999654217,
+  "decoder_fp32_ms": 3.9725620333532183,
+  "total_fp32_ms": 19.346086300114013,
+  "decoder_bf16_ms": 3.2231619664041014,
+  "total_bf16_ms": 18.664082066485815,
+  "decoder_gflops_per_frame": 68.71007232,
+  "decoder_cl_fp32_ms": 4.476025199983269,
+  "decoder_cl_bf16_ms": 3.2237742333866968,
+  "total_cl_bf16_ms": 19.05657456663903,
+  "compile_warmup_s": 13.177468818001216,
+  "decoder_compiled_cl_bf16_ms": 4.9717917664869065,
+  "total_compiled_cl_bf16_ms": 44.2769765999401,
+  "fps_fp32": 51.690041307946956,
+  "fps_cl_bf16": 52.475327950629065,
+  "fps_compiled_cl_bf16": 22.58510126008362,
+  "fps_bf16": 53.57884713739292
+}

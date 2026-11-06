@@ -1,0 +1,377 @@
+<title>NPBG Baseline Comparison</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a bench instrument. Scene switch on top, a wipe viewer as the main instrument,
+   then the scoreboard and two charts that answer "how long" and "where does render time go". */
+:root {
+  --bg: #f4f5f3; --surface: #ffffff; --ink: #141817; --ink-2: #49514f; --muted: #6f7876;
+  --line: #d9dedb; --line-strong: #b9c0bd; --hi: #e9eeeb;
+  --s-npbg: #2a78d6; --s-npbg-2: #86b6ef; --s-sog: #eb6834; --s-3dgs: #1baf7a; --s-sharp: #eda100;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111413; --surface: #191d1c; --ink: #ebeeed; --ink-2: #b8bfbc; --muted: #87908d;
+  --line: #2b3130; --line-strong: #414a48; --hi: #222827;
+  --s-npbg: #3987e5; --s-npbg-2: #184f95; --s-sog: #d95926; --s-3dgs: #199e70; --s-sharp: #c98500;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #111413; --surface: #191d1c; --ink: #ebeeed; --ink-2: #b8bfbc; --muted: #87908d;
+  --line: #2b3130; --line-strong: #414a48; --hi: #222827;
+  --s-npbg: #3987e5; --s-npbg-2: #184f95; --s-sog: #d95926; --s-3dgs: #199e70; --s-sharp: #c98500;
+  color-scheme: dark; }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 36px; }
+h1, h2, h3 { font-family: var(--display); font-stretch: 112%; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 750; line-height: 1.1; }
+h2 { font-size: 21px; font-weight: 700; }
+h3 { font-size: 15px; font-weight: 650; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--ink-2); margin-top: 10px; }
+.eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+header { display: grid; gap: 4px; }
+
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab { font: 600 14px var(--body); color: var(--ink-2); background: transparent; border: 1px solid var(--line-strong);
+  border-radius: 999px; padding: 7px 16px; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tab:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--s-npbg); outline-offset: 2px; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink-2); font-size: 13.5px; margin-top: 12px; }
+.facts b { color: var(--ink); font-weight: 600; }
+
+/* viewer */
+.viewer { display: grid; gap: 12px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.controls label { font-size: 13px; color: var(--ink-2); display: flex; gap: 8px; align-items: center; }
+select { font: 500 14px var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px; padding: 5px 8px; }
+.toggle { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+.stage { position: relative; width: 100%; max-width: 100%; border-radius: 6px; overflow: hidden; background: #000; user-select: none; touch-action: pan-y; cursor: ew-resize; }
+.stage img { display: block; width: 100%; height: auto; }
+.stage .top { position: absolute; inset: 0; }
+.stage .top img { position: absolute; inset: 0; }
+.divider { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35); transform: translateX(-1px); pointer-events: none; }
+.divider::after { content: ""; position: absolute; top: 50%; left: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+.tag { position: absolute; top: 10px; font: 600 12px var(--mono); padding: 3px 8px; border-radius: 4px; background: rgba(0,0,0,.66); color: #fff; pointer-events: none; }
+.tag.l { left: 10px; } .tag.r { right: 10px; }
+.stage input[type=range] { position: absolute; inset: auto 0 0 0; width: 100%; opacity: 0; height: 100%; margin: 0; cursor: ew-resize; }
+.hint { font-size: 12.5px; color: var(--muted); }
+
+.views { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 12px var(--mono); padding: 4px 9px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); background: var(--hi); }
+
+.strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 760px) { .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.thumb { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px; cursor: pointer; text-align: left; color: inherit; font: inherit; }
+.thumb[aria-pressed="true"] { border-color: var(--ink); }
+.thumb img { width: 100%; border-radius: 3px; display: block; }
+.thumb .name { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; }
+.swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.thumb .m { font: 400 11.5px var(--mono); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+/* scoreboard */
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 13.5px; }
+th, td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); vertical-align: bottom; white-space: normal; }
+tbody tr:last-child td { border-bottom: 0; }
+td.best { font-weight: 700; color: var(--ink); }
+td { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-2); }
+td:first-child { font-family: var(--body); color: var(--ink); font-weight: 600; }
+td:first-child span { display: inline-flex; gap: 8px; align-items: center; }
+.sub { display: block; font: 400 11.5px var(--body); color: var(--muted); }
+
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 860px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+.chart { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.chart p { font-size: 13px; color: var(--ink-2); }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart svg text { fill: var(--ink-2); font: 400 11.5px var(--mono); }
+.chart svg .lab { fill: var(--ink); font-weight: 500; }
+.chart svg .grid { stroke: var(--line); stroke-width: 1; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.tip { position: fixed; z-index: 20; pointer-events: none; background: var(--ink); color: var(--bg); font: 400 12px var(--body); padding: 7px 9px; border-radius: 5px; max-width: 280px; line-height: 1.4; }
+
+.notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 900px) { .notes { grid-template-columns: minmax(0, 1fr); } }
+.notes article { display: grid; gap: 8px; align-content: start; }
+.notes p { font-size: 14px; color: var(--ink-2); }
+.notes p b { color: var(--ink); font-weight: 600; }
+.foot { font-size: 12.5px; color: var(--muted); max-width: 90ch; }
+section { display: grid; gap: 14px; }
+@media (prefers-reduced-motion: no-preference) { .stage .top { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">NPBG_Baseline · lab machine · 2× RTX 4090</span>
+    <h1>NPBG against 3DGS, SOG and SHARP</h1>
+    <p class="lede">Every method trains on the same images, poses and point cloud, and is scored on the same held-out views by NPBG's own metric code. Drag across the image to compare any two renders.</p>
+  </header>
+
+  <section aria-label="Scene">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="facts" id="facts"></div>
+  </section>
+
+  <section class="viewer" aria-label="Render comparison">
+    <div class="controls">
+      <label for="left">Left <select id="left"></select></label>
+      <label for="right">Right <select id="right"></select></label>
+      <label class="toggle" for="err"><input type="checkbox" id="err"> Error maps (method sides)</label>
+    </div>
+    <div class="views" id="views" aria-label="Test view"></div>
+    <div class="stage" id="stage">
+      <img id="imgL" alt="">
+      <div class="top" id="top"><img id="imgR" alt=""></div>
+      <div class="divider" id="divider"></div>
+      <span class="tag l" id="tagL"></span><span class="tag r" id="tagR"></span>
+      <input type="range" id="wipe" min="0" max="100" value="50" step="0.1" aria-label="Wipe position">
+    </div>
+    <p class="hint">Error maps show the mean absolute colour error per pixel, ×4: black is exact, bright is wrong. Click a tile to put it on the left.</p>
+    <div class="strip" id="strip"></div>
+  </section>
+
+  <section aria-label="Scoreboard">
+    <h2>Scoreboard</h2>
+    <div class="tablewrap"><table id="score"></table></div>
+    <p class="foot" id="scorefoot"></p>
+  </section>
+
+  <section aria-label="Charts">
+    <div class="charts">
+      <div class="chart">
+        <h3>Time from inputs on disk to the first rendered view</h3>
+        <p>Log scale. Bars include building the scene (training, prediction, or NPBG's build) plus loading it and one cold render pass.</p>
+        <div id="chartTime"></div>
+      </div>
+      <div class="chart">
+        <h3>Render time per frame</h3>
+        <p>Milliseconds, after warm-up. NPBG splits into rasterizing the point pyramid and running the neural decoder. "NPBG" is how the benchmark renders (fp32, as NPBG's eval.py); "NPBG, viewer" uses the viewer's settings (channels_last, bf16, compiled decoder where it helps).</p>
+        <div class="legend" id="legendRender"></div>
+        <div id="chartRender"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-label="Reading the numbers">
+    <h2>Reading the numbers</h2>
+    <div class="notes" id="notes"></div>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const DATA = __DATA__;
+const M = { npbg: "NPBG", sog: "SOG", "3dgs": "3DGS", sharp: "SHARP" };
+const ORDER = ["npbg", "sog", "3dgs", "sharp"];
+const SCENES = {
+  rig: { label: "Rig capture (real)", facts: [["Input", "4 cameras, one snapshot"], ["Split", "3 train / 1 test (bottom_left)"], ["Size", "1920×1080"], ["NPBG", "e2e one-shot: scene predicted by a network, no per-scene training"]] },
+  robot: { label: "Robot lab (synthetic)", facts: [["Input", "QUASAR render, 120 views"], ["Split", "108 train / 12 test (every 10th)"], ["Size", "960×540"], ["NPBG", "classic: descriptors + decoder trained on this scene"]] },
+};
+const NOTES = {
+  rig: [
+    ["Why NPBG's end-to-end time is so short", "The e2e model was trained once, on other scenes. Building this scene is a forward pass: FoundationStereo depth on disk, keep 10% of each camera's pixels, predict a descriptor per point, fit a 3×3 colour matrix. That took <b>18.4 s</b>, and the rebuild reproduced the scene byte for byte. 3DGS and SOG run 30,000 optimisation steps on this one scene (550 s and 1010 s). NPBG is in the same class as SHARP, a feed-forward method. The time to compute FoundationStereo depth is not counted, just as COLMAP is not counted for the others."],
+    ["Why it renders so much slower", "A Gaussian splatter only rasterizes, in one hand-written CUDA kernel: about 4 ms for a 1080p frame. NPBG does two things. It rasterizes its points into a 5-level index pyramid in plain PyTorch (45 scatter passes, 8.7 ms), then runs a gated U-Net over every pixel. The e2e decoder is twice as wide as NPBG's earlier one (7.7M vs 1.9M parameters): <b>1.1 trillion operations per 1080p frame, 40 ms</b> in fp32. The benchmark renders like eval.py. With the viewer's settings (channels_last, bf16, compiled decoder) the frame drops to <b>29 ms, 35 fps</b>, still about 8× slower than the Gaussians."],
+    ["How e2e compares", "With 3 training cameras, e2e is best on PSNR and SSIM, both full-frame and on covered pixels. SOG is close and slightly better on LPIPS. 3DGS overfits the 3 views and leaves floaters in the open centre. SHARP looks sharp but its 3 merged predictions don't line up, so its scores are lowest. NPBG's visible weaknesses: the near cart and drone, which few points reach, and a pale band along the bottom and left edges. This is one test view, so treat the gaps as indicative."],
+  ],
+  robot: [
+    ["A different NPBG", "There is no e2e model for synthetic scenes, so robot_lab uses classic NPBG: descriptors and decoder trained on these 108 views for 10k steps (<b>480 s</b>, from the run's logs). That is per-scene optimisation like 3DGS, so its end-to-end time is in the same range (481 s vs 1064 s for 3DGS and 1424 s for SOG)."],
+    ["Render speed here", "At 960×540 the decoder is small: 69 GFLOPs, 4 ms. Now rasterizing <b>1.78M points</b> five times into the pyramid dominates (15 ms of 19 ms), so bf16 and compiling the decoder don't help. The Gaussian methods render at 106–244 fps, NPBG at about 52–54 fps."],
+    ["Quality with dense views", "With 108 views the Gaussian methods pull ahead on all 12 test views: 3DGS 27.4 dB, SOG 25.9, NPBG 23.4. NPBG's renders are softer and lose the floor reflections, which are view-dependent effects. SHARP fails here: its 4 single-image predictions, each scaled by a fitted depth ratio (one fit at 0.16 log-MAD, past the 0.15 warning line), don't line up with the test views."],
+  ],
+};
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const col = (m) => `var(--s-${m})`;
+const fmt = (v, d = 2) => v == null ? "–" : Number(v).toFixed(d);
+const fmtTime = (s) => s == null ? "–" : s < 1 ? `${(s * 1000).toFixed(0)} ms` : s < 100 ? `${s.toFixed(1)} s` : s < 3600 ? `${(s / 60).toFixed(1)} min` : `${(s / 3600).toFixed(1)} h`;
+
+let scene = "rig", view = 0, left = "npbg", right = "gt", errOn = false;
+try { const h = location.hash.slice(1); if (SCENES[h]) scene = h; } catch (e) {}
+
+const $ = (id) => document.getElementById(id);
+function imgPath(key, stem, who, err) { return `img/${key}_${stem}_${who}${err && who !== "gt" ? "_err" : ""}.jpg`; }
+function whoLabel(w) { return w === "gt" ? "Photo" : M[w]; }
+
+function buildTabs() {
+  $("tabs").innerHTML = "";
+  for (const k of Object.keys(SCENES)) {
+    const b = document.createElement("button");
+    b.className = "tab"; b.role = "tab"; b.textContent = SCENES[k].label; b.setAttribute("aria-selected", k === scene);
+    b.onclick = () => { scene = k; view = 0; try { history.replaceState(null, "", "#" + k); } catch (e) {} render(); };
+    $("tabs").append(b);
+  }
+}
+function buildSelects() {
+  for (const id of ["left", "right"]) {
+    const s = $(id); s.innerHTML = "";
+    for (const w of ["gt", ...ORDER]) { const o = document.createElement("option"); o.value = w; o.textContent = whoLabel(w); s.append(o); }
+  }
+  $("left").value = left; $("right").value = right;
+  $("left").onchange = (e) => { left = e.target.value; updateStage(); };
+  $("right").onchange = (e) => { right = e.target.value; updateStage(); };
+  $("err").onchange = (e) => { errOn = e.target.checked; updateStage(); buildStrip(); };
+}
+function setWipe(p) {
+  p = Math.max(0, Math.min(100, p));
+  $("wipe").value = p;
+  $("top").style.clipPath = `inset(0 0 0 ${p}%)`;
+  $("divider").style.left = p + "%";
+}
+function updateStage() {
+  const d = DATA[scene], stem = d.views[view].stem;
+  $("imgL").src = imgPath(scene, stem, left, errOn); $("imgL").alt = `${whoLabel(left)} render of ${stem}`;
+  $("imgR").src = imgPath(scene, stem, right, errOn); $("imgR").alt = `${whoLabel(right)} render of ${stem}`;
+  $("tagL").textContent = whoLabel(left) + (errOn && left !== "gt" ? " · error" : "");
+  $("tagR").textContent = whoLabel(right) + (errOn && right !== "gt" ? " · error" : "");
+  $("left").value = left; $("right").value = right;
+  document.querySelectorAll(".thumb").forEach((t) => t.setAttribute("aria-pressed", t.dataset.who === left));
+}
+function buildViews() {
+  const d = DATA[scene], box = $("views"); box.innerHTML = "";
+  box.hidden = d.views.length < 2;
+  d.views.forEach((v, i) => {
+    const b = document.createElement("button"); b.className = "chip"; b.textContent = v.stem.replace("frame0", "f");
+    b.setAttribute("aria-pressed", i === view); b.title = v.stem;
+    b.onclick = () => { view = i; buildViews(); updateStage(); buildStrip(); };
+    box.append(b);
+  });
+}
+function buildStrip() {
+  const d = DATA[scene], v = d.views[view], box = $("strip"); box.innerHTML = "";
+  for (const w of ["gt", ...ORDER]) {
+    const b = document.createElement("button"); b.className = "thumb"; b.dataset.who = w;
+    const m = v.methods[w];
+    b.innerHTML = `<img src="${imgPath(scene, v.stem, w, errOn)}" alt="" loading="lazy">
+      <span class="name">${w === "gt" ? "" : `<span class="swatch" style="background:${col(w)}"></span>`}${whoLabel(w)}</span>
+      <span class="m">${m ? `${fmt(m.npbg_psnr_full)} dB · ${fmt(m.npbg_ssim_full, 3)} · ${fmt(m.npbg_lpips_full, 3)}` : "ground truth"}</span>`;
+    b.onclick = () => { left = w; updateStage(); };
+    box.append(b);
+  }
+  updateStage();
+}
+function buildFacts() {
+  $("facts").innerHTML = SCENES[scene].facts.map(([k, v]) => `<span><b>${k}</b> ${v}</span>`).join("");
+}
+function buildScore() {
+  const d = DATA[scene].methods;
+  const cols = [
+    ["PSNR full", (m) => m.eval_npbg_psnr_full, 2, "max", "dB"],
+    ["SSIM full", (m) => m.eval_npbg_ssim_full, 3, "max"],
+    ["LPIPS (Alex)", (m) => m.eval_npbg_lpips_full, 3, "min"],
+    ["PSNR covered", (m) => m.eval_npbg_psnr_covered, 2, "max", "dB"],
+    ["Inputs → first view", (m) => m.end_to_end_s, null, "min"],
+    ["Scene size", (m) => m.model_mb, 1, "min", "MB"],
+    ["Network weights", (m) => m.checkpoint_mb, 0, null, "MB"],
+    ["Render", (m) => m.eval_render_fps, 0, "max", "fps"],
+  ];
+  let h = "<thead><tr><th>Method</th>" + cols.map((c) => `<th>${c[0]}</th>`).join("") + "</tr></thead><tbody>";
+  const best = cols.map((c) => { if (!c[3]) return null; const vals = ORDER.map((k) => c[1](d[k])).filter((x) => x != null); return c[3] === "max" ? Math.max(...vals) : Math.min(...vals); });
+  for (const k of ORDER) {
+    const m = d[k];
+    h += `<tr><td><span><span class="swatch" style="background:${col(k)}"></span>${M[k]}</span></td>`;
+    cols.forEach((c, i) => {
+      const v = c[1](m);
+      const txt = v == null ? "–" : c[2] == null ? fmtTime(v) : `${Number(v).toFixed(c[2])}${c[4] && c[4] !== "dB" ? " " + c[4] : ""}`;
+      h += `<td class="${v != null && v === best[i] ? "best" : ""}">${txt}</td>`;
+    });
+    h += "</tr>";
+  }
+  $("score").innerHTML = h + "</tbody>";
+  const n = DATA[scene].methods.npbg.eval_n_test_views;
+  $("scorefoot").textContent = `Means over ${n} test view${n > 1 ? "s" : ""}; best in each column in bold. "Covered" scores only pixels inside the record's geometry mask. Scene size: SOG is its compressed image folder; NPBG is point positions + descriptors + decoder; network weights are what builds a scene (e2e, SHARP). 3DGS/SOG times include the whole training process; NPBG's includes the scene build (${fmtTime(DATA[scene].methods.npbg.npbg_build_s)}).`;
+}
+
+// ---- charts (hand-built SVG, one scale per chart)
+const tip = $("tip");
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8); tip.style.left = x + "px"; tip.style.top = (e.clientY + 14) + "px"; }
+function hideTip() { tip.hidden = true; }
+function svgEl(tag, attrs) { const el = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const k in attrs) el.setAttribute(k, attrs[k]); return el; }
+function barPath(x, y, w, h, r) { r = Math.min(r, w, h / 2); return `M${x},${y}h${w - r}a${r},${r} 0 0 1 ${r},${r}v${h - 2 * r}a${r},${r} 0 0 1 -${r},${r}h-${w - r}z`; }
+
+function chartTime() {
+  const d = DATA[scene].methods, W = 520, rowH = 40, top = 8, L = 64, R = 96, H = top + ORDER.length * rowH + 26;
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Time from inputs to first rendered view, log scale" });
+  const lo = Math.log10(0.1), hi = Math.log10(3000), x = (s) => L + (W - L - R) * (Math.log10(Math.max(s, 0.1)) - lo) / (hi - lo);
+  for (const t of [0.1, 1, 10, 100, 1000]) {
+    svg.append(svgEl("line", { x1: x(t), x2: x(t), y1: top - 4, y2: H - 22, class: "grid" }));
+    const tx = svgEl("text", { x: x(t), y: H - 6, "text-anchor": "middle" }); tx.textContent = t >= 1000 ? "1000 s" : `${t} s`; svg.append(tx);
+  }
+  ORDER.forEach((k, i) => {
+    const m = d[k], y = top + i * rowH + 9, bh = 20, v = m.end_to_end_s;
+    const lab = svgEl("text", { x: L - 10, y: y + 14, "text-anchor": "end", class: "lab" }); lab.textContent = M[k]; svg.append(lab);
+    const p = svgEl("path", { d: barPath(L, y, x(v) - L, bh, 4), fill: col(k) }); svg.append(p);
+    const val = svgEl("text", { x: x(v) + 8, y: y + 14 }); val.textContent = fmtTime(v); svg.append(val);
+    const build = m.npbg_build_s ?? m.train_wall_time_s;
+    const hit = svgEl("rect", { x: L, y: y - 6, width: W - L, height: bh + 12, fill: "transparent" });
+    hit.addEventListener("mousemove", (e) => showTip(e, `<b>${M[k]}</b><br>build ${fmtTime(build)}<br>load + first render ${fmtTime((m.eval_load_s ?? 0) + (m.eval_render_test_set_s ?? 0))}<br>total ${fmtTime(v)}`));
+    hit.addEventListener("mouseleave", hideTip); svg.append(hit);
+  });
+  $("chartTime").replaceChildren(svg);
+}
+function chartRender() {
+  const d = DATA[scene].methods, prof = DATA[scene].profile, ROWS = ["npbg", "npbg_fast", ...ORDER.slice(1)];
+  const W = 520, rowH = 40, top = 8, L = 104, R = 70, H = top + ROWS.length * rowH + 26;
+  const fast = prof.total_compiled_cl_bf16_ms && prof.total_compiled_cl_bf16_ms < prof.total_cl_bf16_ms
+    ? { total: prof.total_compiled_cl_bf16_ms, how: "channels_last + bf16 + torch.compile" }
+    : { total: prof.total_cl_bf16_ms, how: "channels_last + bf16 (torch.compile was slower here)" };
+  const vals = { npbg: [prof.raster_ms, prof.decoder_fp32_ms], npbg_fast: [prof.raster_ms, fast.total - prof.raster_ms] };
+  for (const k of ORDER.slice(1)) vals[k] = [d[k].eval_render_ms_per_frame];
+  const NAME = { ...M, npbg_fast: "NPBG, viewer" };
+  const maxV = Math.max(...ROWS.map((k) => vals[k].reduce((a, b) => a + b, 0)));
+  const step = maxV > 30 ? 10 : 5, xmax = Math.ceil(maxV / step) * step, x = (v) => L + (W - L - R) * v / xmax;
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Render time per frame in milliseconds" });
+  for (let t = 0; t <= xmax; t += step) {
+    svg.append(svgEl("line", { x1: x(t), x2: x(t), y1: top - 4, y2: H - 22, class: "grid" }));
+    const tx = svgEl("text", { x: x(t), y: H - 6, "text-anchor": "middle" }); tx.textContent = t === 0 ? "0" : `${t} ms`; svg.append(tx);
+  }
+  ROWS.forEach((k, i) => {
+    const y = top + i * rowH + 9, bh = 20, segs = vals[k], total = segs.reduce((a, b) => a + b, 0);
+    const lab = svgEl("text", { x: L - 10, y: y + 14, "text-anchor": "end", class: "lab" }); lab.textContent = NAME[k]; svg.append(lab);
+    let acc = 0;
+    segs.forEach((s, j) => {
+      const last = j === segs.length - 1, x0 = x(acc) + (j ? 1 : 0), w = x(acc + s) - x0 - (last ? 0 : 1);
+      const fill = k.startsWith("npbg") ? (j === 0 ? "var(--s-npbg-2)" : col("npbg")) : col(k);
+      svg.append(last ? svgEl("path", { d: barPath(x0, y, w, bh, 4), fill }) : svgEl("rect", { x: x0, y, width: w, height: bh, fill }));
+      acc += s;
+    });
+    const val = svgEl("text", { x: x(total) + 8, y: y + 14 }); val.textContent = `${total.toFixed(1)} ms`; svg.append(val);
+    const hit = svgEl("rect", { x: L, y: y - 6, width: W - L, height: bh + 12, fill: "transparent" });
+    const html = k === "npbg_fast"
+      ? `<b>NPBG, viewer settings</b><br>${fast.how}<br>rasterize ${prof.raster_ms.toFixed(1)} ms + decoder ${(fast.total - prof.raster_ms).toFixed(1)} ms<br>${(1000 / fast.total).toFixed(0)} fps`
+      : k === "npbg"
+      ? `<b>NPBG</b> (fp32, ${prof.frame_wh.join("×")})<br>rasterize ${prof.raster_ms.toFixed(1)} ms (${(prof.n_points / 1e6).toFixed(2)}M points)<br>decoder ${prof.decoder_fp32_ms.toFixed(1)} ms (${prof.decoder_gflops_per_frame.toFixed(0)} GFLOPs, ${(prof.decoder_params / 1e6).toFixed(1)}M params)<br>bf16 total ${prof.total_bf16_ms.toFixed(1)} ms`
+      : `<b>${M[k]}</b><br>${total.toFixed(1)} ms/frame (${d[k].eval_render_fps.toFixed(0)} fps)<br>${(d[k].n_gaussians / 1e6).toFixed(2)}M Gaussians`;
+    hit.addEventListener("mousemove", (e) => showTip(e, html)); hit.addEventListener("mouseleave", hideTip); svg.append(hit);
+  });
+  $("chartRender").replaceChildren(svg);
+  $("legendRender").innerHTML = `<span><span class="swatch" style="background:var(--s-npbg-2)"></span>NPBG rasterize</span><span><span class="swatch" style="background:var(--s-npbg)"></span>NPBG decoder</span>` +
+    ORDER.slice(1).map((k) => `<span><span class="swatch" style="background:${col(k)}"></span>${M[k]}</span>`).join("");
+}
+function buildNotes() {
+  $("notes").innerHTML = NOTES[scene].map(([h, p]) => `<article><h3>${h}</h3><p>${p}</p></article>`).join("");
+}
+function render() { buildTabs(); buildFacts(); buildViews(); buildStrip(); buildScore(); chartTime(); chartRender(); buildNotes(); }
+
+// wipe interaction
+(function () {
+  const stage = $("stage"); let drag = false;
+  const at = (e) => { const r = stage.getBoundingClientRect(); setWipe(100 * (e.clientX - r.left) / r.width); };
+  stage.addEventListener("pointerdown", (e) => { drag = true; stage.setPointerCapture(e.pointerId); at(e); });
+  stage.addEventListener("pointermove", (e) => { if (drag) at(e); });
+  stage.addEventListener("pointerup", () => { drag = false; });
+  $("wipe").addEventListener("input", (e) => setWipe(+e.target.value));
+})();
+addEventListener("hashchange", () => { const h = location.hash.slice(1); if (SCENES[h] && h !== scene) { scene = h; view = 0; render(); } });
+buildSelects(); setWipe(50); render();
+</script>

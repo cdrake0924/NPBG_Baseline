@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>NPBG Baseline Comparison</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a bench instrument. Scene switch on top, a wipe viewer as the main instrument,
+   then the scoreboard and two charts that answer "how long" and "where does render time go". */
+:root {
+  --bg: #f4f5f3; --surface: #ffffff; --ink: #141817; --ink-2: #49514f; --muted: #6f7876;
+  --line: #d9dedb; --line-strong: #b9c0bd; --hi: #e9eeeb;
+  --s-npbg: #2a78d6; --s-npbg-2: #86b6ef; --s-sog: #eb6834; --s-3dgs: #1baf7a; --s-sharp: #eda100;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111413; --surface: #191d1c; --ink: #ebeeed; --ink-2: #b8bfbc; --muted: #87908d;
+  --line: #2b3130; --line-strong: #414a48; --hi: #222827;
+  --s-npbg: #3987e5; --s-npbg-2: #184f95; --s-sog: #d95926; --s-3dgs: #199e70; --s-sharp: #c98500;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #111413; --surface: #191d1c; --ink: #ebeeed; --ink-2: #b8bfbc; --muted: #87908d;
+  --line: #2b3130; --line-strong: #414a48; --hi: #222827;
+  --s-npbg: #3987e5; --s-npbg-2: #184f95; --s-sog: #d95926; --s-3dgs: #199e70; --s-sharp: #c98500;
+  color-scheme: dark; }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 36px; }
+h1, h2, h3 { font-family: var(--display); font-stretch: 112%; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 750; line-height: 1.1; }
+h2 { font-size: 21px; font-weight: 700; }
+h3 { font-size: 15px; font-weight: 650; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--ink-2); margin-top: 10px; }
+.eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+header { display: grid; gap: 4px; }
+
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab { font: 600 14px var(--body); color: var(--ink-2); background: transparent; border: 1px solid var(--line-strong);
+  border-radius: 999px; padding: 7px 16px; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tab:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--s-npbg); outline-offset: 2px; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink-2); font-size: 13.5px; margin-top: 12px; }
+.facts b { color: var(--ink); font-weight: 600; }
+
+/* viewer */
+.viewer { display: grid; gap: 12px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.controls label { font-size: 13px; color: var(--ink-2); display: flex; gap: 8px; align-items: center; }
+select { font: 500 14px var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px; padding: 5px 8px; }
+.toggle { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+.stage { position: relative; width: 100%; max-width: 100%; border-radius: 6px; overflow: hidden; background: #000; user-select: none; touch-action: pan-y; cursor: ew-resize; }
+.stage img { display: block; width: 100%; height: auto; }
+.stage .top { position: absolute; inset: 0; }
+.stage .top img { position: absolute; inset: 0; }
+.divider { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35); transform: translateX(-1px); pointer-events: none; }
+.divider::after { content: ""; position: absolute; top: 50%; left: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+.tag { position: absolute; top: 10px; font: 600 12px var(--mono); padding: 3px 8px; border-radius: 4px; background: rgba(0,0,0,.66); color: #fff; pointer-events: none; }
+.tag.l { left: 10px; } .tag.r { right: 10px; }
+.stage input[type=range] { position: absolute; inset: auto 0 0 0; width: 100%; opacity: 0; height: 100%; margin: 0; cursor: ew-resize; }
+.hint { font-size: 12.5px; color: var(--muted); }
+
+.views { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 12px var(--mono); padding: 4px 9px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); background: var(--hi); }
+
+.strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 760px) { .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.thumb { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px; cursor: pointer; text-align: left; color: inherit; font: inherit; }
+.thumb[aria-pressed="true"] { border-color: var(--ink); }
+.thumb img { width: 100%; border-radius: 3px; display: block; }
+.thumb .name { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; }
+.swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.thumb .m { font: 400 11.5px var(--mono); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+/* scoreboard */
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 13.5px; }
+th, td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); vertical-align: bottom; white-space: normal; }
+tbody tr:last-child td { border-bottom: 0; }
+td.best { font-weight: 700; color: var(--ink); }
+td { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-2); }
+td:first-child { font-family: var(--body); color: var(--ink); font-weight: 600; }
+td:first-child span { display: inline-flex; gap: 8px; align-items: center; }
+.sub { display: block; font: 400 11.5px var(--body); color: var(--muted); }
+
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 860px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+.chart { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.chart p { font-size: 13px; color: var(--ink-2); }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart svg text { fill: var(--ink-2); font: 400 11.5px var(--mono); }
+.chart svg .lab { fill: var(--ink); font-weight: 500; }
+.chart svg .grid { stroke: var(--line); stroke-width: 1; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.tip { position: fixed; z-index: 20; pointer-events: none; background: var(--ink); color: var(--bg); font: 400 12px var(--body); padding: 7px 9px; border-radius: 5px; max-width: 280px; line-height: 1.4; }
+
+.notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 900px) { .notes { grid-template-columns: minmax(0, 1fr); } }
+.notes article { display: grid; gap: 8px; align-content: start; }
+.notes p { font-size: 14px; color: var(--ink-2); }
+.notes p b { color: var(--ink); font-weight: 600; }
+.foot { font-size: 12.5px; color: var(--muted); max-width: 90ch; }
+section { display: grid; gap: 14px; }
+@media (prefers-reduced-motion: no-preference) { .stage .top { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">NPBG_Baseline · lab machine · 2× RTX 4090</span>
+    <h1>NPBG against 3DGS, SOG and SHARP</h1>
+    <p class="lede">Every method trains on the same images, poses and point cloud, and is scored on the same held-out views by NPBG's own metric code. Drag across the image to compare any two renders.</p>
+  </header>
+
+  <section aria-label="Scene">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="facts" id="facts"></div>
+  </section>
+
+  <section class="viewer" aria-label="Render comparison">
+    <div class="controls">
+      <label for="left">Left <select id="left"></select></label>
+      <label for="right">Right <select id="right"></select></label>
+      <label class="toggle" for="err"><input type="checkbox" id="err"> Error maps (method sides)</label>
+    </div>
+    <div class="views" id="views" aria-label="Test view"></div>
+    <div class="stage" id="stage">
+      <img id="imgL" alt="">
+      <div class="top" id="top"><img id="imgR" alt=""></div>
+      <div class="divider" id="divider"></div>
+      <span class="tag l" id="tagL"></span><span class="tag r" id="tagR"></span>
+      <input type="range" id="wipe" min="0" max="100" value="50" step="0.1" aria-label="Wipe position">
+    </div>
+    <p class="hint">Error maps show the mean absolute colour error per pixel, ×4: black is exact, bright is wrong. Click a tile to put it on the left.</p>
+    <div class="strip" id="strip"></div>
+  </section>
+
+  <section aria-label="Scoreboard">
+    <h2>Scoreboard</h2>
+    <div class="tablewrap"><table id="score"></table></div>
+    <p class="foot" id="scorefoot"></p>
+  </section>
+
+  <section aria-label="Charts">
+    <div class="charts">
+      <div class="chart">
+        <h3>Time from inputs on disk to the first rendered view</h3>
+        <p>Log scale. Bars include building the scene (training, prediction, or NPBG's build) plus loading it and one cold render pass.</p>
+        <div id="chartTime"></div>
+      </div>
+      <div class="chart">
+        <h3>Render time per frame</h3>
+        <p>Milliseconds, after warm-up. NPBG splits into rasterizing the point pyramid and running the neural decoder. "NPBG" is how the benchmark renders (fp32, as NPBG's eval.py); "NPBG, viewer" uses the viewer's settings (channels_last, bf16, compiled decoder where it helps).</p>
+        <div class="legend" id="legendRender"></div>
+        <div id="chartRender"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-label="Reading the numbers">
+    <h2>Reading the numbers</h2>
+    <div class="notes" id="notes"></div>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const DATA = {"rig": {"views": [{"stem": "bottom_left", "methods": {"npbg": {"npbg_psnr_full": 22.95432715550398, "npbg_ssim_full": 0.7218490839004517, "npbg_lpips_full": 0.25448933243751526, "npbg_psnr_covered": 25.022201941585493}, "sog": {"npbg_psnr_full": 22.262220621835205, "npbg_ssim_full": 0.677537739276886, "npbg_lpips_full": 0.2470216155052185, "npbg_psnr_covered": 24.684070299723764}, "3dgs": {"npbg_psnr_full": 20.99345539611741, "npbg_ssim_full": 0.6376561522483826, "npbg_lpips_full": 0.3277711570262909, "npbg_psnr_covered": 22.457969321632252}, "sharp": {"npbg_psnr_full": 19.526430618855215, "npbg_ssim_full": 0.5224944353103638, "npbg_lpips_full": 0.2817729711532593, "npbg_psnr_covered": 20.150363045305703}}}], "methods": {"npbg": {"end_to_end_s": 18.985217406003503, "train_wall_time_s": null, "npbg_build_s": 18.41, "eval_load_s": 0.15975856401200872, "eval_render_test_set_s": 0.4154588419914944, "model_mb": 65.54608, "checkpoint_mb": 155.597898, "n_gaussians": 456569, "eval_npbg_psnr_full": 22.95432715550398, "eval_npbg_ssim_full": 0.7218490839004517, "eval_npbg_lpips_full": 0.25448933243751526, "eval_npbg_psnr_covered": 25.022201941585493, "eval_render_fps": 19.80354696549429, "eval_render_ms_per_frame": 50.49600466736592, "eval_n_test_views": 1, "per_image_predict_s": null, "n_input_views": null}, "sog": {"end_to_end_s": 1011.0137595490087, "train_wall_time_s": 1010.3552619960101, "npbg_build_s": null, "eval_load_s": 0.6093409489985788, "eval_render_test_set_s": 0.04915660400001798, "model_mb": 10.720153, "checkpoint_mb": null, "n_gaussians": 731025, "eval_npbg_psnr_full": 22.262220621835205, "eval_npbg_ssim_full": 0.677537739276886, "eval_npbg_lpips_full": 0.2470216155052185, "eval_npbg_psnr_covered": 24.684070299723764, "eval_render_fps": 311.28831028631214, "eval_render_ms_per_frame": 3.2124559996494404, "eval_n_test_views": 1, "per_image_predict_s": null, "n_input_views": null}, "3dgs": {"end_to_end_s": 550.0397081580013, "train_wall_time_s": 549.7255791549978, "npbg_build_s": null, "eval_load_s": 0.2637376530037727, "eval_render_test_set_s": 0.05039134999969974, "model_mb": 78.219987, "checkpoint_mb": null, "n_gaussians": 315397, "eval_npbg_psnr_full": 20.99345539611741, "eval_npbg_ssim_full": 0.6376561522483826, "eval_npbg_lpips_full": 0.3277711570262909, "eval_npbg_psnr_covered": 22.457969321632252, "eval_render_fps": 252.712170368673, "eval_render_ms_per_frame": 3.957070997178865, "eval_n_test_views": 1, "per_image_predict_s": null, "n_input_views": null}, "sharp": {"end_to_end_s": 56.24542213699897, "train_wall_time_s": 55.82598803800647, "npbg_build_s": null, "eval_load_s": 0.3677964759990573, "eval_render_test_set_s": 0.051637622993439436, "model_mb": 198.181662, "checkpoint_mb": 2809.738232, "n_gaussians": 3538944, "eval_npbg_psnr_full": 19.526430618855215, "eval_npbg_ssim_full": 0.5224944353103638, "eval_npbg_lpips_full": 0.2817729711532593, "eval_npbg_psnr_covered": 20.150363045305703, "eval_render_fps": 192.8935941261859, "eval_render_ms_per_frame": 5.184205336263403, "eval_n_test_views": 1, "per_image_predict_s": 4.32073848133344, "n_input_views": 3}}, "profile": {"scene": "/home/points/NPBG_Baseline/data/npbg/rig_e2e_p10", "n_points": 456569, "frame_wh": [1920, 1080], "padded_wh": [1920, 1088], "levels": 5, "decoder_params": 7709827, "raster_ms": 8.720153866549177, "decoder_fp32_ms": 39.608583967007384, "total_fp32_ms": 48.981629433304384, "decoder_bf16_ms": 33.6753083000076, "total_bf16_ms": 42.86278179982522, "decoder_gflops_per_frame": 1098.9600768, "decoder_cl_fp32_ms": 53.76213863346493, "decoder_cl_bf16_ms": 32.22744693339337, "total_cl_bf16_ms": 41.98997469987565, "compile_warmup_s": 3.506225541990716, "decoder_compiled_cl_bf16_ms": 18.81829909980297, "total_compiled_cl_bf16_ms": 28.55596760006544, "fps_fp32": 20.415817349678935, "fps_cl_bf16": 23.81520844314682, "fps_compiled_cl_bf16": 35.018949944378996, "fps_bf16": 23.330263646212472}}, "robot": {"views": [{"stem": "frame000005", "methods": {"npbg": {"npbg_psnr_full": 25.507755251353522, "npbg_ssim_full": 0.7900885939598083, "npbg_lpips_full": 0.10392981767654419, "npbg_psnr_covered": 25.911108896693406}, "sog": {"npbg_psnr_full": 28.879918208074677, "npbg_ssim_full": 0.878786563873291, "npbg_lpips_full": 0.09532535076141357, "npbg_psnr_covered": 28.905932301466024}, "3dgs": {"npbg_psnr_full": 30.373599006246252, "npbg_ssim_full": 0.9218287467956543, "npbg_lpips_full": 0.06192482262849808, "npbg_psnr_covered": 30.421681609288203}, "sharp": {"npbg_psnr_full": 18.77988484820006, "npbg_ssim_full": 0.5356008410453796, "npbg_lpips_full": 0.33066457509994507, "npbg_psnr_covered": 18.833504019090594}}}, {"stem": "frame000015", "methods": {"npbg": {"npbg_psnr_full": 23.171157103073625, "npbg_ssim_full": 0.7266219258308411, "npbg_lpips_full": 0.15600663423538208, "npbg_psnr_covered": 23.32580472195574}, "sog": {"npbg_psnr_full": 25.593459740353985, "npbg_ssim_full": 0.8324583768844604, "npbg_lpips_full": 0.11929598450660706, "npbg_psnr_covered": 25.608661673364132}, "3dgs": {"npbg_psnr_full": 26.091014588660215, "npbg_ssim_full": 0.8733963966369629, "npbg_lpips_full": 0.0910959392786026, "npbg_psnr_covered": 26.102297500349593}, "sharp": {"npbg_psnr_full": 15.111374057592515, "npbg_ssim_full": 0.37965986132621765, "npbg_lpips_full": 0.5489691495895386, "npbg_psnr_covered": 15.10089086861872}}}, {"stem": "frame000025", "methods": {"npbg": {"npbg_psnr_full": 21.704709405876752, "npbg_ssim_full": 0.6964572668075562, "npbg_lpips_full": 0.1814708411693573, "npbg_psnr_covered": 21.876858392524966}, "sog": {"npbg_psnr_full": 26.379530933728258, "npbg_ssim_full": 0.8375647664070129, "npbg_lpips_full": 0.12273702770471573, "npbg_psnr_covered": 26.408601949604567}, "3dgs": {"npbg_psnr_full": 27.489516682975854, "npbg_ssim_full": 0.8771000504493713, "npbg_lpips_full": 0.09261012077331543, "npbg_psnr_covered": 27.524595130276403}, "sharp": {"npbg_psnr_full": 13.594306598605623, "npbg_ssim_full": 0.28865382075309753, "npbg_lpips_full": 0.629133939743042, "npbg_psnr_covered": 13.603051756535908}}}, {"stem": "frame000035", "methods": {"npbg": {"npbg_psnr_full": 22.76466174676965, "npbg_ssim_full": 0.711595892906189, "npbg_lpips_full": 0.1581791490316391, "npbg_psnr_covered": 23.218196173148282}, "sog": {"npbg_psnr_full": 23.3982762102586, "npbg_ssim_full": 0.7995520830154419, "npbg_lpips_full": 0.13257628679275513, "npbg_psnr_covered": 23.40747806464271}, "3dgs": {"npbg_psnr_full": 23.603139990382402, "npbg_ssim_full": 0.8607147932052612, "npbg_lpips_full": 0.08503106981515884, "npbg_psnr_covered": 23.576252806815106}, "sharp": {"npbg_psnr_full": 13.50193976971954, "npbg_ssim_full": 0.2896125316619873, "npbg_lpips_full": 0.6696344017982483, "npbg_psnr_covered": 13.503807581654982}}}, {"stem": "frame000045", "methods": {"npbg": {"npbg_psnr_full": 22.068763058371246, "npbg_ssim_full": 0.7046022415161133, "npbg_lpips_full": 0.23856033384799957, "npbg_psnr_covered": 22.069555173108437}, "sog": {"npbg_psnr_full": 23.113923730362316, "npbg_ssim_full": 0.7453064918518066, "npbg_lpips_full": 0.23119370639324188, "npbg_psnr_covered": 23.11438319175922}, "3dgs": {"npbg_psnr_full": 26.54057946340825, "npbg_ssim_full": 0.8485047817230225, "npbg_lpips_full": 0.10695786774158478, "npbg_psnr_covered": 26.541274013650956}, "sharp": {"npbg_psnr_full": 13.133688627411432, "npbg_ssim_full": 0.32515546679496765, "npbg_lpips_full": 0.7346476316452026, "npbg_psnr_covered": 13.133645039500792}}}, {"stem": "frame000055", "methods": {"npbg": {"npbg_psnr_full": 23.79621565099192, "npbg_ssim_full": 0.7096276879310608, "npbg_lpips_full": 0.18528354167938232, "npbg_psnr_covered": 23.821984828562258}, "sog": {"npbg_psnr_full": 24.37284882943169, "npbg_ssim_full": 0.7532079815864563, "npbg_lpips_full": 0.1975790411233902, "npbg_psnr_covered": 24.392993007414848}, "3dgs": {"npbg_psnr_full": 27.257755162870115, "npbg_ssim_full": 0.8624618649482727, "npbg_lpips_full": 0.09078904241323471, "npbg_psnr_covered": 27.274605081511364}, "sharp": {"npbg_psnr_full": 13.357511166620942, "npbg_ssim_full": 0.3227750062942505, "npbg_lpips_full": 0.6318191885948181, "npbg_psnr_covered": 13.356835083620641}}}, {"stem": "frame000065", "methods": {"npbg": {"npbg_psnr_full": 20.85500127396228, "npbg_ssim_full": 0.6202741861343384, "npbg_lpips_full": 0.22573357820510864, "npbg_psnr_covered": 21.091149190623597}, "sog": {"npbg_psnr_full": 21.938423149123697, "npbg_ssim_full": 0.7312301993370056, "npbg_lpips_full": 0.2009316086769104, "npbg_psnr_covered": 21.90400656836898}, "3dgs": {"npbg_psnr_full": 24.28471834295276, "npbg_ssim_full": 0.8217120170593262, "npbg_lpips_full": 0.11827057600021362, "npbg_psnr_covered": 24.255952346309307}, "sharp": {"npbg_psnr_full": 14.110902937897155, "npbg_ssim_full": 0.2699694335460663, "npbg_lpips_full": 0.5705273151397705, "npbg_psnr_covered": 14.08479525071489}}}, {"stem": "frame000075", "methods": {"npbg": {"npbg_psnr_full": 24.43589044097177, "npbg_ssim_full": 0.7326004505157471, "npbg_lpips_full": 0.1463148295879364, "npbg_psnr_covered": 24.44175960555262}, "sog": {"npbg_psnr_full": 27.270964142303285, "npbg_ssim_full": 0.8326653838157654, "npbg_lpips_full": 0.11201438307762146, "npbg_psnr_covered": 27.273125084907996}, "3dgs": {"npbg_psnr_full": 28.479606074057024, "npbg_ssim_full": 0.8822656273841858, "npbg_lpips_full": 0.08217586576938629, "npbg_psnr_covered": 28.482702680799427}, "sharp": {"npbg_psnr_full": 16.010066688858018, "npbg_ssim_full": 0.40976718068122864, "npbg_lpips_full": 0.510962188243866, "npbg_psnr_covered": 16.01020154552807}}}, {"stem": "frame000085", "methods": {"npbg": {"npbg_psnr_full": 24.37414123203887, "npbg_ssim_full": 0.7217802405357361, "npbg_lpips_full": 0.15558049082756042, "npbg_psnr_covered": 24.466634933340767}, "sog": {"npbg_psnr_full": 26.85071544577838, "npbg_ssim_full": 0.8317427635192871, "npbg_lpips_full": 0.10855955630540848, "npbg_psnr_covered": 26.85344238957638}, "3dgs": {"npbg_psnr_full": 27.398884436589263, "npbg_ssim_full": 0.8767585754394531, "npbg_lpips_full": 0.08016134053468704, "npbg_psnr_covered": 27.39689450796254}, "sharp": {"npbg_psnr_full": 14.48276787130818, "npbg_ssim_full": 0.33849260210990906, "npbg_lpips_full": 0.5955886840820312, "npbg_psnr_covered": 14.480026934336346}}}, {"stem": "frame000095", "methods": {"npbg": {"npbg_psnr_full": 24.256348604624343, "npbg_ssim_full": 0.7332546710968018, "npbg_lpips_full": 0.16157521307468414, "npbg_psnr_covered": 24.537436244511355}, "sog": {"npbg_psnr_full": 28.424413178490738, "npbg_ssim_full": 0.8710575699806213, "npbg_lpips_full": 0.08578440546989441, "npbg_psnr_covered": 28.42807007365119}, "3dgs": {"npbg_psnr_full": 30.001161278444183, "npbg_ssim_full": 0.9143995642662048, "npbg_lpips_full": 0.06041087582707405, "npbg_psnr_covered": 30.000314123531183}, "sharp": {"npbg_psnr_full": 14.172059235418214, "npbg_ssim_full": 0.3483343720436096, "npbg_lpips_full": 0.6306764483451843, "npbg_psnr_covered": 14.16822171259759}}}, {"stem": "frame000105", "methods": {"npbg": {"npbg_psnr_full": 23.396755971065208, "npbg_ssim_full": 0.7221354246139526, "npbg_lpips_full": 0.16048015654087067, "npbg_psnr_covered": 24.09582250719163}, "sog": {"npbg_psnr_full": 27.270379998043502, "npbg_ssim_full": 0.8436232805252075, "npbg_lpips_full": 0.11797191947698593, "npbg_psnr_covered": 27.282046849329337}, "3dgs": {"npbg_psnr_full": 28.810129272138788, "npbg_ssim_full": 0.8942709565162659, "npbg_lpips_full": 0.08115191757678986, "npbg_psnr_covered": 28.81663694636044}, "sharp": {"npbg_psnr_full": 15.663909182718958, "npbg_ssim_full": 0.3633821904659271, "npbg_lpips_full": 0.5020720958709717, "npbg_psnr_covered": 15.70026780614274}}}, {"stem": "frame000115", "methods": {"npbg": {"npbg_psnr_full": 24.45065779489871, "npbg_ssim_full": 0.7556372880935669, "npbg_lpips_full": 0.14725762605667114, "npbg_psnr_covered": 24.89779706554433}, "sog": {"npbg_psnr_full": 26.922253375326882, "npbg_ssim_full": 0.8262047171592712, "npbg_lpips_full": 0.15140384435653687, "npbg_psnr_covered": 26.951338153425034}, "3dgs": {"npbg_psnr_full": 27.93379380222641, "npbg_ssim_full": 0.870334804058075, "npbg_lpips_full": 0.11209654062986374, "npbg_psnr_covered": 27.950001973273025}, "sharp": {"npbg_psnr_full": 16.074174436726803, "npbg_ssim_full": 0.3990064561367035, "npbg_lpips_full": 0.5370081663131714, "npbg_psnr_covered": 16.08942279297793}}}], "methods": {"npbg": {"end_to_end_s": 481.4043736270076, "train_wall_time_s": null, "npbg_build_s": 480.3, "eval_load_s": 0.47461942600784823, "eval_render_test_set_s": 0.6297542009997414, "model_mb": 85.9972, "checkpoint_mb": null, "n_gaussians": 1779053, "eval_npbg_psnr_full": 23.398504794499825, "eval_npbg_ssim_full": 0.7187229891618093, "eval_npbg_lpips_full": 0.168364350994428, "eval_npbg_psnr_covered": 23.646175644396454, "eval_render_fps": 54.507907516540186, "eval_render_ms_per_frame": 18.345962000037414, "eval_n_test_views": 12, "per_image_predict_s": null, "n_input_views": null}, "sog": {"end_to_end_s": 1424.189023102008, "train_wall_time_s": 1422.6121550700045, "npbg_build_s": null, "eval_load_s": 1.4814134670014028, "eval_render_test_set_s": 0.09545456500200089, "model_mb": 32.538482, "checkpoint_mb": null, "n_gaussians": 1844164, "eval_npbg_psnr_full": 25.867925578439667, "eval_npbg_ssim_full": 0.815283348162969, "eval_npbg_lpips_full": 0.13961442622045675, "eval_npbg_psnr_covered": 25.877506608959198, "eval_render_fps": 243.97991420259368, "eval_render_ms_per_frame": 4.098698055814667, "eval_n_test_views": 12, "per_image_predict_s": null, "n_input_views": null}, "3dgs": {"end_to_end_s": 1063.7088818760094, "train_wall_time_s": 1061.4514574420027, "npbg_build_s": null, "eval_load_s": 2.113974320003763, "eval_render_test_set_s": 0.14345011400291696, "model_mb": 628.15354, "checkpoint_mb": null, "n_gaussians": 2532871, "eval_npbg_psnr_full": 27.355324841745965, "eval_npbg_ssim_full": 0.875312348206838, "eval_npbg_lpips_full": 0.08855633158236742, "eval_npbg_psnr_covered": 27.36193406001063, "eval_render_fps": 121.75933718631495, "eval_render_ms_per_frame": 8.212922500307387, "eval_n_test_views": 12, "per_image_predict_s": null, "n_input_views": null}, "sharp": {"end_to_end_s": 59.45923532100278, "train_wall_time_s": 58.82725961100368, "npbg_build_s": null, "eval_load_s": 0.4727339929959271, "eval_render_test_set_s": 0.15924171700316947, "model_mb": 264.24195, "checkpoint_mb": 2809.738232, "n_gaussians": 4718592, "eval_npbg_psnr_full": 14.83271545175645, "eval_npbg_ssim_full": 0.3558674802382787, "eval_npbg_lpips_full": 0.5743086487054825, "eval_npbg_psnr_covered": 14.83872253260993, "eval_render_fps": 106.00508157210729, "eval_render_ms_per_frame": 9.433510027722352, "eval_n_test_views": 12, "per_image_predict_s": 3.9255313087487593, "n_input_views": 4}}, "profile": {"scene": "/home/points/NPBG_Baseline/data/npbg/robot_lab_p05", "n_points": 1779053, "frame_wh": [960, 540], "padded_wh": [960, 544], "levels": 5, "decoder_params": 1928771, "raster_ms": 15.160701999654217, "decoder_fp32_ms": 3.9725620333532183, "total_fp32_ms": 19.346086300114013, "decoder_bf16_ms": 3.2231619664041014, "total_bf16_ms": 18.664082066485815, "decoder_gflops_per_frame": 68.71007232, "decoder_cl_fp32_ms": 4.476025199983269, "decoder_cl_bf16_ms": 3.2237742333866968, "total_cl_bf16_ms": 19.05657456663903, "compile_warmup_s": 13.177468818001216, "decoder_compiled_cl_bf16_ms": 4.9717917664869065, "total_compiled_cl_bf16_ms": 44.2769765999401, "fps_fp32": 51.690041307946956, "fps_cl_bf16": 52.475327950629065, "fps_compiled_cl_bf16": 22.58510126008362, "fps_bf16": 53.57884713739292}}};
+const M = { npbg: "NPBG", sog: "SOG", "3dgs": "3DGS", sharp: "SHARP" };
+const ORDER = ["npbg", "sog", "3dgs", "sharp"];
+const SCENES = {
+  rig: { label: "Rig capture (real)", facts: [["Input", "4 cameras, one snapshot"], ["Split", "3 train / 1 test (bottom_left)"], ["Size", "1920×1080"], ["NPBG", "e2e one-shot: scene predicted by a network, no per-scene training"]] },
+  robot: { label: "Robot lab (synthetic)", facts: [["Input", "QUASAR render, 120 views"], ["Split", "108 train / 12 test (every 10th)"], ["Size", "960×540"], ["NPBG", "classic: descriptors + decoder trained on this scene"]] },
+};
+const NOTES = {
+  rig: [
+    ["Why NPBG's end-to-end time is so short", "The e2e model was trained once, on other scenes. Building this scene is a forward pass: FoundationStereo depth on disk, keep 10% of each camera's pixels, predict a descriptor per point, fit a 3×3 colour matrix. That took <b>18.4 s</b>, and the rebuild reproduced the scene byte for byte. 3DGS and SOG run 30,000 optimisation steps on this one scene (550 s and 1010 s). NPBG is in the same class as SHARP, a feed-forward method. The time to compute FoundationStereo depth is not counted, just as COLMAP is not counted for the others."],
+    ["Why it renders so much slower", "A Gaussian splatter only rasterizes, in one hand-written CUDA kernel: about 4 ms for a 1080p frame. NPBG does two things. It rasterizes its points into a 5-level index pyramid in plain PyTorch (45 scatter passes, 8.7 ms), then runs a gated U-Net over every pixel. The e2e decoder is twice as wide as NPBG's earlier one (7.7M vs 1.9M parameters): <b>1.1 trillion operations per 1080p frame, 40 ms</b> in fp32. The benchmark renders like eval.py. With the viewer's settings (channels_last, bf16, compiled decoder) the frame drops to <b>29 ms, 35 fps</b>, still about 8× slower than the Gaussians."],
+    ["How e2e compares", "With 3 training cameras, e2e is best on PSNR and SSIM, both full-frame and on covered pixels. SOG is close and slightly better on LPIPS. 3DGS overfits the 3 views and leaves floaters in the open centre. SHARP looks sharp but its 3 merged predictions don't line up, so its scores are lowest. NPBG's visible weaknesses: the near cart and drone, which few points reach, and a pale band along the bottom and left edges. This is one test view, so treat the gaps as indicative."],
+  ],
+  robot: [
+    ["A different NPBG", "There is no e2e model for synthetic scenes, so robot_lab uses classic NPBG: descriptors and decoder trained on these 108 views for 10k steps (<b>480 s</b>, from the run's logs). That is per-scene optimisation like 3DGS, so its end-to-end time is in the same range (481 s vs 1064 s for 3DGS and 1424 s for SOG)."],
+    ["Render speed here", "At 960×540 the decoder is small: 69 GFLOPs, 4 ms. Now rasterizing <b>1.78M points</b> five times into the pyramid dominates (15 ms of 19 ms), so bf16 and compiling the decoder don't help. The Gaussian methods render at 106–244 fps, NPBG at about 52–54 fps."],
+    ["Quality with dense views", "With 108 views the Gaussian methods pull ahead on all 12 test views: 3DGS 27.4 dB, SOG 25.9, NPBG 23.4. NPBG's renders are softer and lose the floor reflections, which are view-dependent effects. SHARP fails here: its 4 single-image predictions, each scaled by a fitted depth ratio (one fit at 0.16 log-MAD, past the 0.15 warning line), don't line up with the test views."],
+  ],
+};
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const col = (m) => `var(--s-${m})`;
+const fmt = (v, d = 2) => v == null ? "–" : Number(v).toFixed(d);
+const fmtTime = (s) => s == null ? "–" : s < 1 ? `${(s * 1000).toFixed(0)} ms` : s < 100 ? `${s.toFixed(1)} s` : s < 3600 ? `${(s / 60).toFixed(1)} min` : `${(s / 3600).toFixed(1)} h`;
+
+let scene = "rig", view = 0, left = "npbg", right = "gt", errOn = false;
+try { const h = location.hash.slice(1); if (SCENES[h]) scene = h; } catch (e) {}
+
+const $ = (id) => document.getElementById(id);
+function imgPath(key, stem, who, err) { return `img/${key}_${stem}_${who}${err && who !== "gt" ? "_err" : ""}.jpg`; }
+function whoLabel(w) { return w === "gt" ? "Photo" : M[w]; }
+
+function buildTabs() {
+  $("tabs").innerHTML = "";
+  for (const k of Object.keys(SCENES)) {
+    const b = document.createElement("button");
+    b.className = "tab"; b.role = "tab"; b.textContent = SCENES[k].label; b.setAttribute("aria-selected", k === scene);
+    b.onclick = () => { scene = k; view = 0; try { history.replaceState(null, "", "#" + k); } catch (e) {} render(); };
+    $("tabs").append(b);
+  }
+}
+function buildSelects() {
+  for (const id of ["left", "right"]) {
+    const s = $(id); s.innerHTML = "";
+    for (const w of ["gt", ...ORDER]) { const o = document.createElement("option"); o.value = w; o.textContent = whoLabel(w); s.append(o); }
+  }
+  $("left").value = left; $("right").value = right;
+  $("left").onchange = (e) => { left = e.target.value; updateStage(); };
+  $("right").onchange = (e) => { right = e.target.value; updateStage(); };
+  $("err").onchange = (e) => { errOn = e.target.checked; updateStage(); buildStrip(); };
+}
+function setWipe(p) {
+  p = Math.max(0, Math.min(100, p));
+  $("wipe").value = p;
+  $("top").style.clipPath = `inset(0 0 0 ${p}%)`;
+  $("divider").style.left = p + "%";
+}
+function updateStage() {
+  const d = DATA[scene], stem = d.views[view].stem;
+  $("imgL").src = imgPath(scene, stem, left, errOn); $("imgL").alt = `${whoLabel(left)} render of ${stem}`;
+  $("imgR").src = imgPath(scene, stem, right, errOn); $("imgR").alt = `${whoLabel(right)} render of ${stem}`;
+  $("tagL").textContent = whoLabel(left) + (errOn && left !== "gt" ? " · error" : "");
+  $("tagR").textContent = whoLabel(right) + (errOn && right !== "gt" ? " · error" : "");
+  $("left").value = left; $("right").value = right;
+  document.querySelectorAll(".thumb").forEach((t) => t.setAttribute("aria-pressed", t.dataset.who === left));
+}
+function buildViews() {
+  const d = DATA[scene], box = $("views"); box.innerHTML = "";
+  box.hidden = d.views.length < 2;
+  d.views.forEach((v, i) => {
+    const b = document.createElement("button"); b.className = "chip"; b.textContent = v.stem.replace("frame0", "f");
+    b.setAttribute("aria-pressed", i === view); b.title = v.stem;
+    b.onclick = () => { view = i; buildViews(); updateStage(); buildStrip(); };
+    box.append(b);
+  });
+}
+function buildStrip() {
+  const d = DATA[scene], v = d.views[view], box = $("strip"); box.innerHTML = "";
+  for (const w of ["gt", ...ORDER]) {
+    const b = document.createElement("button"); b.className = "thumb"; b.dataset.who = w;
+    const m = v.methods[w];
+    b.innerHTML = `<img src="${imgPath(scene, v.stem, w, errOn)}" alt="" loading="lazy">
+      <span class="name">${w === "gt" ? "" : `<span class="swatch" style="background:${col(w)}"></span>`}${whoLabel(w)}</span>
+      <span class="m">${m ? `${fmt(m.npbg_psnr_full)} dB · ${fmt(m.npbg_ssim_full, 3)} · ${fmt(m.npbg_lpips_full, 3)}` : "ground truth"}</span>`;
+    b.onclick = () => { left = w; updateStage(); };
+    box.append(b);
+  }
+  updateStage();
+}
+function buildFacts() {
+  $("facts").innerHTML = SCENES[scene].facts.map(([k, v]) => `<span><b>${k}</b> ${v}</span>`).join("");
+}
+function buildScore() {
+  const d = DATA[scene].methods;
+  const cols = [
+    ["PSNR full", (m) => m.eval_npbg_psnr_full, 2, "max", "dB"],
+    ["SSIM full", (m) => m.eval_npbg_ssim_full, 3, "max"],
+    ["LPIPS (Alex)", (m) => m.eval_npbg_lpips_full, 3, "min"],
+    ["PSNR covered", (m) => m.eval_npbg_psnr_covered, 2, "max", "dB"],
+    ["Inputs → first view", (m) => m.end_to_end_s, null, "min"],
+    ["Scene size", (m) => m.model_mb, 1, "min", "MB"],
+    ["Network weights", (m) => m.checkpoint_mb, 0, null, "MB"],
+    ["Render", (m) => m.eval_render_fps, 0, "max", "fps"],
+  ];
+  let h = "<thead><tr><th>Method</th>" + cols.map((c) => `<th>${c[0]}</th>`).join("") + "</tr></thead><tbody>";
+  const best = cols.map((c) => { if (!c[3]) return null; const vals = ORDER.map((k) => c[1](d[k])).filter((x) => x != null); return c[3] === "max" ? Math.max(...vals) : Math.min(...vals); });
+  for (const k of ORDER) {
+    const m = d[k];
+    h += `<tr><td><span><span class="swatch" style="background:${col(k)}"></span>${M[k]}</span></td>`;
+    cols.forEach((c, i) => {
+      const v = c[1](m);
+      const txt = v == null ? "–" : c[2] == null ? fmtTime(v) : `${Number(v).toFixed(c[2])}${c[4] && c[4] !== "dB" ? " " + c[4] : ""}`;
+      h += `<td class="${v != null && v === best[i] ? "best" : ""}">${txt}</td>`;
+    });
+    h += "</tr>";
+  }
+  $("score").innerHTML = h + "</tbody>";
+  const n = DATA[scene].methods.npbg.eval_n_test_views;
+  $("scorefoot").textContent = `Means over ${n} test view${n > 1 ? "s" : ""}; best in each column in bold. "Covered" scores only pixels inside the record's geometry mask. Scene size: SOG is its compressed image folder; NPBG is point positions + descriptors + decoder; network weights are what builds a scene (e2e, SHARP). 3DGS/SOG times include the whole training process; NPBG's includes the scene build (${fmtTime(DATA[scene].methods.npbg.npbg_build_s)}).`;
+}
+
+// ---- charts (hand-built SVG, one scale per chart)
+const tip = $("tip");
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8); tip.style.left = x + "px"; tip.style.top = (e.clientY + 14) + "px"; }
+function hideTip() { tip.hidden = true; }
+function svgEl(tag, attrs) { const el = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const k in attrs) el.setAttribute(k, attrs[k]); return el; }
+function barPath(x, y, w, h, r) { r = Math.min(r, w, h / 2); return `M${x},${y}h${w - r}a${r},${r} 0 0 1 ${r},${r}v${h - 2 * r}a${r},${r} 0 0 1 -${r},${r}h-${w - r}z`; }
+
+function chartTime() {
+  const d = DATA[scene].methods, W = 520, rowH = 40, top = 8, L = 64, R = 96, H = top + ORDER.length * rowH + 26;
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Time from inputs to first rendered view, log scale" });
+  const lo = Math.log10(0.1), hi = Math.log10(3000), x = (s) => L + (W - L - R) * (Math.log10(Math.max(s, 0.1)) - lo) / (hi - lo);
+  for (const t of [0.1, 1, 10, 100, 1000]) {
+    svg.append(svgEl("line", { x1: x(t), x2: x(t), y1: top - 4, y2: H - 22, class: "grid" }));
+    const tx = svgEl("text", { x: x(t), y: H - 6, "text-anchor": "middle" }); tx.textContent = t >= 1000 ? "1000 s" : `${t} s`; svg.append(tx);
+  }
+  ORDER.forEach((k, i) => {
+    const m = d[k], y = top + i * rowH + 9, bh = 20, v = m.end_to_end_s;
+    const lab = svgEl("text", { x: L - 10, y: y + 14, "text-anchor": "end", class: "lab" }); lab.textContent = M[k]; svg.append(lab);
+    const p = svgEl("path", { d: barPath(L, y, x(v) - L, bh, 4), fill: col(k) }); svg.append(p);
+    const val = svgEl("text", { x: x(v) + 8, y: y + 14 }); val.textContent = fmtTime(v); svg.append(val);
+    const build = m.npbg_build_s ?? m.train_wall_time_s;
+    const hit = svgEl("rect", { x: L, y: y - 6, width: W - L, height: bh + 12, fill: "transparent" });
+    hit.addEventListener("mousemove", (e) => showTip(e, `<b>${M[k]}</b><br>build ${fmtTime(build)}<br>load + first render ${fmtTime((m.eval_load_s ?? 0) + (m.eval_render_test_set_s ?? 0))}<br>total ${fmtTime(v)}`));
+    hit.addEventListener("mouseleave", hideTip); svg.append(hit);
+  });
+  $("chartTime").replaceChildren(svg);
+}
+function chartRender() {
+  const d = DATA[scene].methods, prof = DATA[scene].profile, ROWS = ["npbg", "npbg_fast", ...ORDER.slice(1)];
+  const W = 520, rowH = 40, top = 8, L = 104, R = 70, H = top + ROWS.length * rowH + 26;
+  const fast = prof.total_compiled_cl_bf16_ms && prof.total_compiled_cl_bf16_ms < prof.total_cl_bf16_ms
+    ? { total: prof.total_compiled_cl_bf16_ms, how: "channels_last + bf16 + torch.compile" }
+    : { total: prof.total_cl_bf16_ms, how: "channels_last + bf16 (torch.compile was slower here)" };
+  const vals = { npbg: [prof.raster_ms, prof.decoder_fp32_ms], npbg_fast: [prof.raster_ms, fast.total - prof.raster_ms] };
+  for (const k of ORDER.slice(1)) vals[k] = [d[k].eval_render_ms_per_frame];
+  const NAME = { ...M, npbg_fast: "NPBG, viewer" };
+  const maxV = Math.max(...ROWS.map((k) => vals[k].reduce((a, b) => a + b, 0)));
+  const step = maxV > 30 ? 10 : 5, xmax = Math.ceil(maxV / step) * step, x = (v) => L + (W - L - R) * v / xmax;
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Render time per frame in milliseconds" });
+  for (let t = 0; t <= xmax; t += step) {
+    svg.append(svgEl("line", { x1: x(t), x2: x(t), y1: top - 4, y2: H - 22, class: "grid" }));
+    const tx = svgEl("text", { x: x(t), y: H - 6, "text-anchor": "middle" }); tx.textContent = t === 0 ? "0" : `${t} ms`; svg.append(tx);
+  }
+  ROWS.forEach((k, i) => {
+    const y = top + i * rowH + 9, bh = 20, segs = vals[k], total = segs.reduce((a, b) => a + b, 0);
+    const lab = svgEl("text", { x: L - 10, y: y + 14, "text-anchor": "end", class: "lab" }); lab.textContent = NAME[k]; svg.append(lab);
+    let acc = 0;
+    segs.forEach((s, j) => {
+      const last = j === segs.length - 1, x0 = x(acc) + (j ? 1 : 0), w = x(acc + s) - x0 - (last ? 0 : 1);
+      const fill = k.startsWith("npbg") ? (j === 0 ? "var(--s-npbg-2)" : col("npbg")) : col(k);
+      svg.append(last ? svgEl("path", { d: barPath(x0, y, w, bh, 4), fill }) : svgEl("rect", { x: x0, y, width: w, height: bh, fill }));
+      acc += s;
+    });
+    const val = svgEl("text", { x: x(total) + 8, y: y + 14 }); val.textContent = `${total.toFixed(1)} ms`; svg.append(val);
+    const hit = svgEl("rect", { x: L, y: y - 6, width: W - L, height: bh + 12, fill: "transparent" });
+    const html = k === "npbg_fast"
+      ? `<b>NPBG, viewer settings</b><br>${fast.how}<br>rasterize ${prof.raster_ms.toFixed(1)} ms + decoder ${(fast.total - prof.raster_ms).toFixed(1)} ms<br>${(1000 / fast.total).toFixed(0)} fps`
+      : k === "npbg"
+      ? `<b>NPBG</b> (fp32, ${prof.frame_wh.join("×")})<br>rasterize ${prof.raster_ms.toFixed(1)} ms (${(prof.n_points / 1e6).toFixed(2)}M points)<br>decoder ${prof.decoder_fp32_ms.toFixed(1)} ms (${prof.decoder_gflops_per_frame.toFixed(0)} GFLOPs, ${(prof.decoder_params / 1e6).toFixed(1)}M params)<br>bf16 total ${prof.total_bf16_ms.toFixed(1)} ms`
+      : `<b>${M[k]}</b><br>${total.toFixed(1)} ms/frame (${d[k].eval_render_fps.toFixed(0)} fps)<br>${(d[k].n_gaussians / 1e6).toFixed(2)}M Gaussians`;
+    hit.addEventListener("mousemove", (e) => showTip(e, html)); hit.addEventListener("mouseleave", hideTip); svg.append(hit);
+  });
+  $("chartRender").replaceChildren(svg);
+  $("legendRender").innerHTML = `<span><span class="swatch" style="background:var(--s-npbg-2)"></span>NPBG rasterize</span><span><span class="swatch" style="background:var(--s-npbg)"></span>NPBG decoder</span>` +
+    ORDER.slice(1).map((k) => `<span><span class="swatch" style="background:${col(k)}"></span>${M[k]}</span>`).join("");
+}
+function buildNotes() {
+  $("notes").innerHTML = NOTES[scene].map(([h, p]) => `<article><h3>${h}</h3><p>${p}</p></article>`).join("");
+}
+function render() { buildTabs(); buildFacts(); buildViews(); buildStrip(); buildScore(); chartTime(); chartRender(); buildNotes(); }
+
+// wipe interaction
+(function () {
+  const stage = $("stage"); let drag = false;
+  const at = (e) => { const r = stage.getBoundingClientRect(); setWipe(100 * (e.clientX - r.left) / r.width); };
+  stage.addEventListener("pointerdown", (e) => { drag = true; stage.setPointerCapture(e.pointerId); at(e); });
+  stage.addEventListener("pointermove", (e) => { if (drag) at(e); });
+  stage.addEventListener("pointerup", () => { drag = false; });
+  $("wipe").addEventListener("input", (e) => setWipe(+e.target.value));
+})();
+addEventListener("hashchange", () => { const h = location.hash.slice(1); if (SCENES[h] && h !== scene) { scene = h; view = 0; render(); } });
+buildSelects(); setWipe(50); render();
+</script>

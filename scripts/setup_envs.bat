@@ -46,7 +46,9 @@ if /i "%1"=="sharp" (
         call conda create -n sharp python=3.13 -y || goto :fail
         call conda activate sharp || goto :fail
         pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu126 || goto :fail
-        pip install -r external/ml-sharp/requirements.txt || goto :fail
+        rem requirements.txt contains "-e .", which pip resolves against the current directory
+        pushd external\ml-sharp && pip install -r requirements.txt || goto :fail
+        popd
         pip install -e external/ml-sharp || goto :fail
         call conda deactivate
     )

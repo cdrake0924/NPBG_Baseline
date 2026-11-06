@@ -1,9 +1,11 @@
 """Shared evaluator: renders the test views of ANY 3DGS-format .ply with the reference
-3DGS rasterizer and reports PSNR / SSIM / LPIPS plus render speed.
+3DGS rasterizer and reports image quality plus render speed.
 
 Every method is scored by this one script, so differences come from the models and not
 from different renderers or metric code. Metrics are computed on 8-bit quantized
-renders, matching 3DGS's metrics.py (which reads saved PNGs).
+renders, matching 3DGS's metrics.py (which reads saved PNGs). NPBG's metrics (npbg_*) are
+computed on the same renders by bench/scoring.py; if the scene has coverage/<image>.png masks
+(scenes exported by npbg_to_colmap.py), the npbg_*_covered scores use them.
 
 Run inside the `gs` env (bench/run.py does this for you):
     python bench/eval_render.py --ply <model.ply> --source <dataset scene> --out eval.json
@@ -24,12 +26,10 @@ sys.path.insert(0, str(GS_ROOT))
 
 from plyfile import PlyData  # noqa: E402
 from gaussian_renderer import render  # noqa: E402
-from lpipsPyTorch import lpips  # noqa: E402
 from scene.dataset_readers import sceneLoadTypeCallbacks  # noqa: E402
 from scene.gaussian_model import GaussianModel  # noqa: E402
 from utils.camera_utils import cameraList_from_camInfos  # noqa: E402
-from utils.image_utils import psnr  # noqa: E402
-from utils.loss_utils import ssim  # noqa: E402
+from scoring import Scorer, load_mask, mean_scores  # noqa: E402
 
 try:
     from diff_gaussian_rasterization import SparseGaussianAdam  # noqa: F401
@@ -45,7 +45,17 @@ def sh_degree_of(ply_path: Path) -> int:
 
 
 def load_test_cameras(source: Path, white: bool, resolution: int):
-    if (source / "sparse").exists():
+    export = source / "npbg_export.json"
+    split = json.loads(export.read_text()) if export.exists() else {}
+    if split.get("split_mode") == "explicit":
+        # NPBG's own test views (npbg_to_colmap.py): load every camera, keep the listed ones
+        info = sceneLoadTypeCallbacks["Colmap"](str(source), "images", "", False, False)
+        wanted = {Path(n).stem for n in split["test_images"]}
+        cams = [c for c in info.train_cameras if Path(c.image_name).stem in wanted]
+        if len(cams) != len(wanted):
+            raise SystemExit(f"found {len(cams)} of {len(wanted)} test images in {source}")
+        info = info._replace(test_cameras=cams)
+    elif (source / "sparse").exists():
         info = sceneLoadTypeCallbacks["Colmap"](str(source), "images", "", True, False)
     elif (source / "transforms_train.json").exists():
         info = sceneLoadTypeCallbacks["Blender"](str(source), white, "", True)
@@ -65,6 +75,7 @@ def main():
     ap.add_argument("--fps-repeats", type=int, default=3)
     ap.add_argument("--no-lpips", action="store_true")
     ap.add_argument("--save-renders", type=Path, default=None)
+    ap.add_argument("--npbg-root", type=Path, required=True, help="NPBG checkout (for its metrics.py)")
     args = ap.parse_args()
 
     cams = load_test_cameras(args.source, args.white, args.resolution)
@@ -80,7 +91,8 @@ def main():
     def draw(cam):
         return render(cam, gaussians, pipe, bg, separate_sh=SEPARATE_SH)["render"]
 
-    psnrs, ssims, lpipss = [], [], []
+    scorer = Scorer(args.npbg_root, lpips=not args.no_lpips)
+    rows = []
     if args.save_renders:
         import torchvision
         args.save_renders.mkdir(parents=True, exist_ok=True)
@@ -95,15 +107,13 @@ def main():
 
         # Quality
         for i, cam in enumerate(cams):
-            img = (draw(cam).clamp(0, 1) * 255).round() / 255
+            img = draw(cam)
             gt = cam.original_image[:3].cuda()
-            img, gt = img.unsqueeze(0), gt.unsqueeze(0)
-            psnrs.append(psnr(img, gt).mean().item())
-            ssims.append(ssim(img, gt).item())
-            if not args.no_lpips:
-                lpipss.append(lpips(img, gt, net_type="vgg").item())
+            stem = Path(cam.image_name).stem  # this 3DGS version keeps the extension in image_name
+            mask = load_mask(args.source / "coverage" / f"{stem}.png", (cam.image_width, cam.image_height), "cuda")
+            rows.append({"image": stem, **scorer.score(img, gt, mask)})
             if args.save_renders:
-                torchvision.utils.save_image(img[0], args.save_renders / f"{i:05d}.png")
+                torchvision.utils.save_image(img.clamp(0, 1), args.save_renders / f"{stem}.png")
 
         # Speed: rasterization only (no I/O), after warm-up
         for cam in cams[:10]:
@@ -125,9 +135,8 @@ def main():
         "resolution_wh": [cams[0].image_width, cams[0].image_height],
         "n_gaussians": int(gaussians.get_xyz.shape[0]),
         "sh_degree": sh,
-        "psnr": sum(psnrs) / len(psnrs),
-        "ssim": sum(ssims) / len(ssims),
-        "lpips": sum(lpipss) / len(lpipss) if lpipss else None,
+        **mean_scores([{k: v for k, v in r.items() if k != "image"} for r in rows]),
+        "per_view": rows,
         "load_s": load_s,
         "render_test_set_s": render_test_set_s,
         "render_fps": n_frames / dt,

@@ -1,0 +1,37 @@
+{
+  "ply": "/home/points/NPBG_Baseline/results/3dgs/rig_e2e_p10/model/point_cloud/iteration_30000/point_cloud.ply",
+  "source": "/data/points/npbg_baseline/data/npbg/rig_e2e_p10",
+  "n_test_views": 1,
+  "resolution_wh": [
+    1920,
+    1080
+  ],
+  "n_gaussians": 315397,
+  "sh_degree": 3,
+  "npbg_psnr_full": 20.99345539611741,
+  "npbg_psnr_covered": 22.457969321632252,
+  "npbg_ssim_full": 0.6376561522483826,
+  "npbg_ssim_covered": 0.6800039707417747,
+  "npbg_lpips_full": 0.3277711570262909,
+  "psnr": 20.992687225341797,
+  "ssim": 0.639696478843689,
+  "lpips": 0.35212188959121704,
+  "per_view": [
+    {
+      "image": "bottom_left",
+      "npbg_psnr_full": 20.99345539611741,
+      "npbg_psnr_covered": 22.457969321632252,
+      "npbg_ssim_full": 0.6376561522483826,
+      "npbg_ssim_covered": 0.6800039707417747,
+      "npbg_lpips_full": 0.3277711570262909,
+      "psnr": 20.992687225341797,
+      "ssim": 0.639696478843689,
+      "lpips": 0.35212188959121704
+    }
+  ],
+  "load_s": 0.2637376530037727,
+  "render_test_set_s": 0.05039134999969974,
+  "render_fps": 252.712170368673,
+  "render_ms_per_frame": 3.957070997178865,
+  "render_peak_alloc_mib": 532.34375
+}

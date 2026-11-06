@@ -109,6 +109,9 @@ def main():
     ap.add_argument("-o", "--output", type=Path, required=True)
     ap.add_argument("--views", type=int, default=4)
     ap.add_argument("--names", nargs="*", help="explicit image names instead of automatic selection")
+    ap.add_argument("--holdout", type=int, default=8,
+                    help="exclude sorted-name index %% N == 0 (the test views) from selection; 0 = the scene "
+                         "holds training views only (an explicit-split train/ model)")
     ap.add_argument("-c", "--checkpoint", type=Path, default=None)
     args = ap.parse_args()
     t_start = time.perf_counter()
@@ -120,7 +123,8 @@ def main():
     points = read_points3d_with_ids(sparse / "points3D.bin")
     by_name = {img.name: img for img in images.values()}
     views = [by_name[n] for n in args.names] if args.names else \
-        farthest_views(train_views(images), args.views, cl.qvec2rotmat)
+        farthest_views(train_views(images, args.holdout) if args.holdout else
+                       sorted(images.values(), key=lambda im: im.name), args.views, cl.qvec2rotmat)
 
     device = torch.device("cuda")
     t0 = time.perf_counter()
